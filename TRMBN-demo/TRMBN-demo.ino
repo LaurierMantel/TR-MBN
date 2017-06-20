@@ -25,6 +25,9 @@ void setup() {
   }
   else {
     initialPressure = bmp.readPressure();
+    Serial.print("Initial pressure: ");
+    Serial.print(initialPressure);
+    Serial.println();
   }
 }
 
@@ -40,5 +43,6 @@ void loop() {
       usbMIDI.sendNoteOff(note,0,channel); // Turn the note OFF - don't forget to do this ;)      
     }
     Serial.println();
+    delay(1000);
 }
 
