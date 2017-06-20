@@ -13,7 +13,7 @@ float initialPressure = 0.0;
 Adafruit_BMP280 bmp; // I2C
 int channel = 1; // Defines the MIDI channel to send messages on (values from 1-16)
 int velocity = 100; // Defines the velocity that the note plays at (values from 0-127)
-int note = 46; // b flat on bass clef
+int note = 70; // b flat on bass clef
 int minPressure = 98000;
 int maxPressure = 103000;
 int velocityBuckets = 127;
@@ -40,13 +40,23 @@ void setup() {
 void loop() {
     Serial.print(F("Pressure = "));
     pressure = bmp.readPressure();
-    Serial.print(pressure);
-    Serial.println(" Pa");
+//    Serial.print(pressure);
+//    Serial.println(" Pa");
     int normP = (pressure - minPressure)/normDivisor;
+    Serial.print("normP: ");
+    Serial.println(normP);
     if (normP > velocityBuckets) {
+      //usbMIDI.sendNoteOff(note,0,channel);
+      Serial.println("1");
       usbMIDI.sendNoteOn(note,velocityBuckets,channel);
     } else if (normP > 0) {
+      //usbMIDI.sendNoteOff(note,0,channel);
+      Serial.println("2");
       usbMIDI.sendNoteOn(note,normP,channel);
+    }
+    else if(normP < 0) {
+      Serial.println("3");
+      usbMIDI.sendNoteOff(note,0,channel); // Turn the note OFF - don't forget to do this ;)      
     }
 //    long capacitiveTotal = sustainSensor.capacitiveSensor(30);
 //    Serial.println(capacitiveTotal);
@@ -59,6 +69,6 @@ void loop() {
 //      usbMIDI.sendNoteOff(note,0,channel); // Turn the note OFF - don't forget to do this ;)      
 //    }
 //    Serial.println();
-    delay(1000);
+    delay(100);
 }
 
