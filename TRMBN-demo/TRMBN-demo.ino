@@ -16,7 +16,7 @@ int velocity = 100; // Defines the velocity that the note plays at (values from 
 int note = 70; // b flat on bass clef
 int minPressure = 98000;
 int maxPressure = 103000;
-int velocityBuckets = 127;
+int velocityBuckets = 100;
 int normDivisor = (maxPressure - minPressure)/velocityBuckets;
 float pressure = -1.0;
 CapacitiveSensor sustainSensor = CapacitiveSensor(4,2);
@@ -29,12 +29,6 @@ void setup() {
     Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
     while (1);
   }
-  else {
-    initialPressure = bmp.readPressure();
-    Serial.print("Initial pressure: ");
-    Serial.print(initialPressure);
-    Serial.println();
-  }
 }
 
 void loop() {
@@ -43,6 +37,8 @@ void loop() {
 //    Serial.print(pressure);
 //    Serial.println(" Pa");
     int normP = (pressure - minPressure)/normDivisor;
+    Serial.print("Slurp my gooch");
+    Serial.print(normDivisor);
     Serial.print("normP: ");
     Serial.println(normP);
     if (normP > velocityBuckets) {
@@ -53,10 +49,9 @@ void loop() {
       //usbMIDI.sendNoteOff(note,0,channel);
       Serial.println("2");
       usbMIDI.sendNoteOn(note,normP,channel);
-    }
-    else if(normP < 0) {
+    } else if (normP < 0) {
       Serial.println("3");
-      usbMIDI.sendNoteOff(note,0,channel); // Turn the note OFF - don't forget to do this ;)      
+      usbMIDI.sendNoteOff(note,0,channel);   
     }
 //    long capacitiveTotal = sustainSensor.capacitiveSensor(30);
 //    Serial.println(capacitiveTotal);
