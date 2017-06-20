@@ -35,14 +35,14 @@ void loop() {
     pressure = bmp.readPressure();
     Serial.print(pressure);
     Serial.println(" Pa");
-    let capacitiveTotal = sustainSensor.capacitiveSensor(30);
+    long capacitiveTotal = sustainSensor.capacitiveSensor(30);
     Serial.println(capacitiveTotal);
     Serial.println("Capacitance");
     if(pressure > initialPressure){
       usbMIDI.sendNoteOn(note,velocity,channel); // Turn the note ON
     }
     // NEED TO TEST THIS VALUE
-    else if capacitiveTotal < 10 {
+    else if (capacitiveTotal < 10) {
       usbMIDI.sendNoteOff(note,0,channel); // Turn the note OFF - don't forget to do this ;)      
     }
     Serial.println();
