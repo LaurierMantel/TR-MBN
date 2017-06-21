@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
-#include <CapacitiveSensor.h>
+#include <Bounce.h>
 
 #define BMP_SCK 16
 #define BMP_MISO 12
@@ -20,53 +20,54 @@ int velocityBuckets = 100;
 int normDivisor = (maxPressure - minPressure)/velocityBuckets;
 float pressure = -1.0;
 int prevVal = 0;
-CapacitiveSensor sustainSensor = CapacitiveSensor(4,2);
+const int buttonPin = 12;
+bool isSustainOn = false;
+Bounce pushbutton = Bounce(buttonPin, 10);  // 10 ms debounce
+byte previousState = HIGH;         // what state was the button last time
 
 void setup() {
   Serial.begin(9600);
   Serial.println(F("BMP280 test"));
-  if (!bmp.begin()) {  
-    Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
-    while (1);
-  }
+  pinMode(buttonPin, INPUT_PULLUP);
+ // if (!bmp.begin()) {  
+   // Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
+   // while (1);
+  //}
 }
 
 void loop() {
-    Serial.print(F("Pressure = "));
-    pressure = bmp.readPressure();
+   // Serial.print(F("Pressure = "));
+   // pressure = bmp.readPressure();
 
-    int normP = (pressure - minPressure)/normDivisor + 10;
-    Serial.print("Slurp my gooch");
-    Serial.print(normDivisor);
-    Serial.print("normP: ");
-    Serial.println(normP);
-    if (normP != prevVal) {
-      usbMIDI.sendNoteOff(note,0,channel);   
-      prevVal = normP;
-    }
-    if (normP > velocityBuckets) {
+    //int normP = (pressure - minPressure)/normDivisor + 10;
+   // Serial.print("Slurp my gooch");
+   // Serial.print(normDivisor);
+   // Serial.print("normP: ");
+   // Serial.println(normP);
+    //if (normP != prevVal) {
+      //usbMIDI.sendNoteOff(note,0,channel);   
+      //prevVal = normP;
+    //}
+    //if (normP > velocityBuckets) {
     //  usbMIDI.sendNoteOff(note,0,channel);
-      Serial.println("1");
-      usbMIDI.sendNoteOn(note,velocityBuckets,channel);
-    } else if (normP > 0) {
+//      Serial.println("1");
+  //    usbMIDI.sendNoteOn(note,velocityBuckets,channel);
+    //} else if (normP > 0) {
      // usbMIDI.sendNoteOff(note,0,channel);
-      Serial.println("2");
-      usbMIDI.sendNoteOn(note,normP,channel);
-    } else if (normP <= 0) {
-      Serial.println("3");
-      usbMIDI.sendNoteOff(note,0,channel);   
+     // Serial.println("2");
+      //usbMIDI.sendNoteOn(note,normP,channel);
+    //} else if (normP <= 0) {
+      //Serial.println("3");
+      //usbMIDI.sendNoteOff(note,0,channel);   
+    //}
+    byte buttonState = digitalRead(buttonPin);
+  if (buttonState != previousState) {
+    if (buttonState == LOW) {
+      Serial.println("LOW");
+    } else {
+      Serial.println("HIGH");
     }
-//    long capacitiveTotal = sustainSensor.capacitiveSensor(30);
-//    Serial.println(capacitiveTotal);
-//    Serial.println("Capacitance");
-//    if(pressure > initialPressure){
-//      usbMIDI.sendNoteOn(note,velocity,channel); // Turn the note ON
-//    }
-//    // NEED TO TEST THIS VALUE
-//    else if (capacitiveTotal < 10) {
-//      usbMIDI.sendNoteOff(note,0,channel); // Turn the note OFF - don't forget to do this ;)      
-//    }
-//    Serial.println();
-    delay(100);
+    previousState = buttonState;
+  }
 }
 
