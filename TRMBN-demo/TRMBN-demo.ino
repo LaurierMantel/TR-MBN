@@ -29,45 +29,43 @@ void setup() {
   Serial.begin(9600);
   Serial.println(F("BMP280 test"));
   pinMode(buttonPin, INPUT_PULLUP);
- // if (!bmp.begin()) {  
-   // Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
-   // while (1);
-  //}
+  if (!bmp.begin()) {  
+    Serial.println(F("Could Ânot find a valid BMP280 sensor, check wiring!"));
+    while (1);
+  }
 }
 
 void loop() {
-   // Serial.print(F("Pressure = "));
-   // pressure = bmp.readPressure();
-
-    //int normP = (pressure - minPressure)/normDivisor + 10;
-   // Serial.print("Slurp my gooch");
-   // Serial.print(normDivisor);
-   // Serial.print("normP: ");
-   // Serial.println(normP);
-    //if (normP != prevVal) {
-      //usbMIDI.sendNoteOff(note,0,channel);   
-      //prevVal = normP;
-    //}
-    //if (normP > velocityBuckets) {
-    //  usbMIDI.sendNoteOff(note,0,channel);
-//      Serial.println("1");
-  //    usbMIDI.sendNoteOn(note,velocityBuckets,channel);
-    //} else if (normP > 0) {
-     // usbMIDI.sendNoteOff(note,0,channel);
-     // Serial.println("2");
-      //usbMIDI.sendNoteOn(note,normP,channel);
-    //} else if (normP <= 0) {
-      //Serial.println("3");
-      //usbMIDI.sendNoteOff(note,0,channel);   
-    //}
-    byte buttonState = digitalRead(buttonPin);
-  if (buttonState != previousState) {
-    if (buttonState == LOW) {
-      Serial.println("LOW");
-    } else {
-      Serial.println("HIGH");
+    pressure = bmp.readPressure();
+    Serial.print(F("Pressure = "));
+    Serial.println(pressure);
+    int normP = (pressure - minPressure)/normDivisor + 10;
+    Serial.print("normP: ");
+    Serial.println(normP);
+    usbMIDI.sendNoteOff(note,0,channel);
+    if (normP > velocityBuckets) {
+      usbMIDI.sendNoteOn(note,velocityBuckets,channel);
+    } else if (normP > 0) {
+//      usbMIDI.sendNoteOff(note,0,channel);
+      usbMIDI.sendNoteOn(note,normP,channel);
+    } else if (normP <= 0) {
+//      usbMIDI.sendNoteOff(note,0,channel);   
     }
-    previousState = buttonState;
-  }
+//  if (pushbutton.update()) {
+//    if (pushbutton.fallingEdge()) {
+//      count = count + 1;
+//      countAt = millis();
+//    }
+//  } else {
+//    if (count != countPrinted) {
+//      unsigned long nowMillis = millis();
+//      if (nowMillis - countAt > 100) {
+//        Serial.print("count: ");
+//        Serial.println(count);
+//        countPrinted = count;
+//      }
+//    }
+//  }
+  delay(100);
 }
 
