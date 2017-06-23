@@ -26,6 +26,7 @@ Bounce pushbutton = Bounce(buttonPin, 10);  // 10 ms debounce
 byte previousState = HIGH;         // what state was the button last time
 int CC = 7;
 bool isNoteOn = false;
+bool hasPressureBeenRead = false;
 
 void setup() {
   Serial.begin(9600);
@@ -38,7 +39,10 @@ void setup() {
 }
 
 void loop() {
-    pressure = bmp.readPressure();
+    if (!hasPressureBeenRead) {
+      pressure = bmp.readPressure();
+      hasPressureBeenRead = true;  
+    }
     Serial.print(F("Pressure = "));
     Serial.println(pressure);
     int normP = (pressure - minPressure)/normDivisor;
