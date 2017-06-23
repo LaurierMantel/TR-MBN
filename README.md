@@ -9,10 +9,10 @@ https://learn.adafruit.com/force-sensitive-resistor-fsr/using-an-fsr
 - Notes on installation: you need to run the Arduino software once before installing Teensyduino
 - [Adafruit BMP280 I2C tutorial](https://learn.adafruit.com/adafruit-bmp280-barometric-pressure-plus-temperature-sensor-breakout/wiring-and-test)
 
+[Midi API](https://www.midi.org/specifications/category/reference-tables)
 
-
-Pressure Sensor Wiring:
-Sensor: Teensy
+#Pressure Sensor Wiring:
+Format(Sensor: Teensy)
 Vin: Power
 GND: GND
 SCK: 19

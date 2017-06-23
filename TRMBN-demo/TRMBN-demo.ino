@@ -5,29 +5,30 @@
 #include <Adafruit_BMP280.h>
 
 Adafruit_BMP280 bmp; // I2C
+
+// MIDI
 const int midiChan = 1;
 const int velCtrl = 7;
 const int modCtrl = 1;
-
-const int note = 70; // b flat on bass clef
 const int midiValMin = 0;
 const int midiValMax = 127;
+const int note = 70; // b flat on bass clef
 
 // Force Sensor
-const int fsrMin = 0;
-const int fsrMax = 1000;
+const float fsrMin = 0;
+const float fsrMax = 1000;
 const int forcePin = 14;
 
 // Pressure Sensor
 const float minPressureDiff = 100;
-const int pressureRange = 5000;
+const float pressureRange = 5000;
+
+// State Variables
 bool isInitPressureRead = false;
 float minPressure = 0;
 float maxPressure = 0;
-
-// State Variables
 bool isNoteOn = false;
-
+bool isSustainOn = false;
 void setup() {
   Serial.begin(9600);
   Serial.println(F("BMP280 test"));
@@ -38,9 +39,10 @@ void setup() {
 }
 
 void loop() {
-  float val = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
-  usbMIDI.sendControlChange(modCtrl,val,midiChan);
-  Serial.println(val);
+  float force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
+  usbMIDI.sendControlChange(modCtrl,force,midiChan);
+  Serial.print("Force = ");
+  Serial.println(force);
   if (!isInitPressureRead) {
     isInitPressureRead = true;  
     float initialPressure = bmp.readPressure();
@@ -49,14 +51,16 @@ void loop() {
   }
   float rawPressure = bmp.readPressure();
   float pressure = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
-  Serial.print(F("Pressure = "));
+  Serial.print("Raw Pressure = ");
+  Serial.println(rawPressure);
+  Serial.print("Pressure = ");
   Serial.println(pressure);
   if (isNoteOn) {
     if (pressure > midiValMax) {
       usbMIDI.sendControlChange(velCtrl, midiValMax, midiChan);
     } else if (pressure > 0) {
       usbMIDI.sendControlChange(velCtrl, pressure, midiChan);
-    } else if (pressure <= 0) {
+    } else if (pressure <= 0 && !isSustainOn) {
       usbMIDI.sendNoteOff(note,0,midiChan);
       isNoteOn = false;
     }
