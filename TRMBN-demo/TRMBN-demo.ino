@@ -3,28 +3,30 @@
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
-#include <Bounce.h>
 
-#define BMP_SCK 16
-#define BMP_MISO 12
-#define BMP_MOSI 11 
-#define BMP_CS 10
 Adafruit_BMP280 bmp; // I2C
-int channel = 1; // Defines the MIDI channel to send messages on (values from 1-16)
-int velocity = 100; // Defines the velocity that the note plays at (values from 0-127)
-int note = 70; // b flat on bass clef
-int CC = 7;
+const int midiChan = 1;
+const int velCtrl = 7;
+const int modCtrl = 1;
 
-int maxPressure = 101000;
-int velocityBuckets = 127;
-bool isNoteOn = false;
+const int note = 70; // b flat on bass clef
+const int midiValMin = 0;
+const int midiValMax = 127;
 
-float normDivisor = 0;
+// Force Sensor
+const int fsrMin = 0;
+const int fsrMax = 1000;
+const int forcePin = 14;
+
+// Pressure Sensor
+const float minPressureDiff = 100;
+const int pressureRange = 5000;
 bool isInitPressureRead = false;
 float minPressure = 0;
-float minPressureDiff = 100;
-int pressureRange = 5000;
-float normDiv = pressureRange / velocityBuckets;
+float maxPressure = 0;
+
+// State Variables
+bool isNoteOn = false;
 
 void setup() {
   Serial.begin(9600);
@@ -36,41 +38,37 @@ void setup() {
 }
 
 void loop() {
-    if (!isInitPressureRead) {
-      isInitPressureRead = true;  
-      float initialPressure = bmp.readPressure();
-      minPressure = initialPressure + minPressureDiff;
+  float val = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
+  usbMIDI.sendControlChange(modCtrl,val,midiChan);
+  Serial.println(val);
+  if (!isInitPressureRead) {
+    isInitPressureRead = true;  
+    float initialPressure = bmp.readPressure();
+    minPressure = initialPressure + minPressureDiff;
+    maxPressure = minPressure + pressureRange;
+  }
+  float rawPressure = bmp.readPressure();
+  float pressure = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
+  Serial.print(F("Pressure = "));
+  Serial.println(pressure);
+  if (isNoteOn) {
+    if (pressure > midiValMax) {
+      usbMIDI.sendControlChange(velCtrl, midiValMax, midiChan);
+    } else if (pressure > 0) {
+      usbMIDI.sendControlChange(velCtrl, pressure, midiChan);
+    } else if (pressure <= 0) {
+      usbMIDI.sendNoteOff(note,0,midiChan);
+      isNoteOn = false;
     }
-    float pressure = bmp.readPressure();
-    int normP = (pressure - minPressure) / normDiv;
-    Serial.print(F("Pressure = "));
-    Serial.println(pressure);
-    Serial.print("normP: ");
-    Serial.println(normP);
-    Serial.print("isNoteOn: ");
-    Serial.println(isNoteOn);
-        Serial.print("minPressure: ");
-    Serial.println(minPressure);
-        Serial.print("normDiv: ");
-    Serial.println(normDiv);
-    if (isNoteOn) {
-      if (normP > velocityBuckets) {
-        usbMIDI.sendControlChange(CC,velocityBuckets,channel);
-      } else if (normP > 0) {
-        usbMIDI.sendControlChange(CC,normP,channel);
-      } else if (normP <= 0) {
-        usbMIDI.sendNoteOff(note,0,channel);
-        isNoteOn = false;
-      }
-    } else {
-      if (normP > velocityBuckets) {
-        usbMIDI.sendNoteOn(note,velocityBuckets,channel);
-        isNoteOn = true;
-      } else if (normP > 0) {
-        usbMIDI.sendNoteOn(note,normP,channel);
-        isNoteOn = true;
-      }
+  } else {
+    if (pressure > midiValMax) {
+      usbMIDI.sendNoteOn(note, midiValMax, midiChan);
+      isNoteOn = true;
+    } else if (pressure > 0) {
+      usbMIDI.sendNoteOn(note, pressure, midiChan);
+      isNoteOn = true;
     }
-    delay(50);
+  }
+  delay(100);
 }
 
