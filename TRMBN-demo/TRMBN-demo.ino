@@ -9,29 +9,26 @@
 #define BMP_MISO 12
 #define BMP_MOSI 11 
 #define BMP_CS 10
-float initialPressure = 0.0;
 Adafruit_BMP280 bmp; // I2C
 int channel = 1; // Defines the MIDI channel to send messages on (values from 1-16)
 int velocity = 100; // Defines the velocity that the note plays at (values from 0-127)
 int note = 70; // b flat on bass clef
-int minPressure = 97500;
-int maxPressure = 101000;
-int velocityBuckets = 100;
-int normDivisor = (maxPressure - minPressure)/velocityBuckets;
-float pressure = -1.0;
-int prevVal = 0;
-const int buttonPin = 12;
-bool isSustainOn = false;
-Bounce pushbutton = Bounce(buttonPin, 10);  // 10 ms debounce
-byte previousState = HIGH;         // what state was the button last time
 int CC = 7;
+
+int maxPressure = 101000;
+int velocityBuckets = 127;
 bool isNoteOn = false;
-bool hasPressureBeenRead = false;
+
+float normDivisor = 0;
+bool isInitPressureRead = false;
+float minPressure = 0;
+float minPressureDiff = 100;
+int pressureRange = 5000;
+float normDiv = pressureRange / velocityBuckets;
 
 void setup() {
   Serial.begin(9600);
   Serial.println(F("BMP280 test"));
-  pinMode(buttonPin, INPUT_PULLUP);
   if (!bmp.begin()) {  
     Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
     while (1);
@@ -39,17 +36,23 @@ void setup() {
 }
 
 void loop() {
-    if (!hasPressureBeenRead) {
-      pressure = bmp.readPressure();
-      hasPressureBeenRead = true;  
+    if (!isInitPressureRead) {
+      isInitPressureRead = true;  
+      float initialPressure = bmp.readPressure();
+      minPressure = initialPressure + minPressureDiff;
     }
+    float pressure = bmp.readPressure();
+    int normP = (pressure - minPressure) / normDiv;
     Serial.print(F("Pressure = "));
     Serial.println(pressure);
-    int normP = (pressure - minPressure)/normDivisor;
     Serial.print("normP: ");
     Serial.println(normP);
     Serial.print("isNoteOn: ");
     Serial.println(isNoteOn);
+        Serial.print("minPressure: ");
+    Serial.println(minPressure);
+        Serial.print("normDiv: ");
+    Serial.println(normDiv);
     if (isNoteOn) {
       if (normP > velocityBuckets) {
         usbMIDI.sendControlChange(CC,velocityBuckets,channel);
@@ -68,23 +71,6 @@ void loop() {
         isNoteOn = true;
       }
     }
-    
-
-//  if (pushbutton.update()) {
-//    if (pushbutton.fallingEdge()) {
-//      count = count + 1;
-//      countAt = millis();
-//    }
-//  } else {
-//    if (count != countPrinted) {
-//      unsigned long nowMillis = millis();
-//      if (nowMillis - countAt > 100) {
-//        Serial.print("count: ");
-//        Serial.println(count);
-//        countPrinted = count;
-//      }
-//    }
-//  }
-  delay(100);
+    delay(50);
 }
 
