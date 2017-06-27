@@ -1,10 +1,10 @@
 
 #include <Wire.h>
-#include <SPI.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BMP280.h>
+//#include <SPI.h>
+#include <Adafruit_MPL3115A2.h>
+#include <Bounce.h>
 
-Adafruit_BMP280 bmp; // I2C
+Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 
 // MIDI
 const int midiChan = 1;
@@ -23,39 +23,49 @@ const int forcePin = 14;
 const float minPressureDiff = 100;
 const float pressureRange = 5000;
 
+// Sustain Button
+const int buttonPin = 31;
+Bounce sustainButton = Bounce(buttonPin, 100);  // 10 ms debounce
+
 // State Variables
 bool isInitPressureRead = false;
 float minPressure = 0;
 float maxPressure = 0;
 bool isNoteOn = false;
 bool isSustainOn = false;
+
 void setup() {
   Serial.begin(9600);
-  Serial.println(F("BMP280 test"));
-  if (!bmp.begin()) {  
-    Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
-    while (1);
+  pinMode(buttonPin, INPUT_PULLUP);
+  if (! baro.begin()) {
+    Serial.println("Couldnt find sensor");
+    return;
   }
+  
 }
 
 void loop() {
   float force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
   usbMIDI.sendControlChange(modCtrl,force,midiChan);
-  Serial.print("Force = ");
-  Serial.println(force);
+  Serial.print("Force = "); Serial.println(force);
   if (!isInitPressureRead) {
     isInitPressureRead = true;  
-    float initialPressure = bmp.readPressure();
+    float initialPressure = baro.getPressure();
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
   }
-  float rawPressure = bmp.readPressure();
+  float rawPressure = baro.getPressure();
   float pressure = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
-  Serial.print("Raw Pressure = ");
-  Serial.println(rawPressure);
-  Serial.print("Pressure = ");
-  Serial.println(pressure);
+  Serial.print("Raw Pressure = "); Serial.println(rawPressure);
+  Serial.print("Pressure = "); Serial.println(pressure);
+  Serial.print("isSustainOn = "); Serial.println(isSustainOn);
+  Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
+    if (sustainButton.update()) {
+      if (sustainButton.fallingEdge()) {
+        isSustainOn = !isSustainOn;
+      }
+    }
     if (pressure > midiValMax) {
       usbMIDI.sendControlChange(velCtrl, midiValMax, midiChan);
     } else if (pressure > 0) {
@@ -73,6 +83,7 @@ void loop() {
       isNoteOn = true;
     }
   }
-  delay(100);
+//  delay(50);
 }
+
 

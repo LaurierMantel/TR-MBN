@@ -17,3 +17,15 @@ Vin: Power
 GND: GND
 SCK: 19
 SDI: 18
+
+#Baro Pressure Wiring
+Vin: 3.3V
+GND: GND
+SCL: 19/A5/SCL0
+SDA: 18/A4/SDA0
+
+#Button Pin
+31
+
+#Force Sensor Wiring
+14
