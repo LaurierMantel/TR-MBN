@@ -10,6 +10,7 @@ https://learn.adafruit.com/force-sensitive-resistor-fsr/using-an-fsr
 - [Adafruit BMP280 I2C tutorial](https://learn.adafruit.com/adafruit-bmp280-barometric-pressure-plus-temperature-sensor-breakout/wiring-and-test)
 
 [Midi API](https://www.midi.org/specifications/category/reference-tables)
+[MIDI Notes](http://www.electronics.dit.ie/staff/tscarff/Music_technology/midi/midi_note_numbers_for_octaves.htm)
 
 #Pressure Sensor Wiring:
 Format(Sensor: Teensy)

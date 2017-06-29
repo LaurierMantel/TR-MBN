@@ -41,5 +41,5 @@ void loop()
   }
   Serial.println("> (" + String(softPotADC) + ")");
 
-  delay(500);
+  //delay(50);
 }
