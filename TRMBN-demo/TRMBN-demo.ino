@@ -1,5 +1,13 @@
 #include <Adafruit_MPL3115A2.h>
 #include <Bounce.h>
+#include <SPI.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP280.h>
+
+#define BMP_SCK 9
+#define BMP_MISO 10
+#define BMP_MOSI 11 
+#define BMP_CS 12
 
 // MIDI
 const int midiChan = 1;
@@ -21,9 +29,10 @@ const int fsrMax = 1000;
 const int forcePin = 14;
 
 // Pressure Sensor
-Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
+Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
+//Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 const float minPressureDiff = 100;
-const float pressureRange = 5000;
+const float pressureRange = 1000;//2000;//5000;
 
 // Sustain Button
 const int buttonPin = 31;
@@ -40,26 +49,32 @@ int prevNote = 0;
 void setup() {
   Serial.begin(9600);
   pinMode(buttonPin, INPUT_PULLUP);
-  if (! baro.begin()) {
-    Serial.println("Couldnt find sensor");
+  if (!bmp.begin()) {
+    Serial.println("Couldnt find BMP280");
     return;
   }
+//  if (! baro.begin()) {
+//    Serial.println("Couldnt find MPL3115A2");
+//    return;
+//  }
 }
 
 void loop() {
   int rawPosition = analogRead(positionPin);
   int note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
   Serial.print("Note = "); Serial.println(note);
+  Serial.print("RawPosition = "); Serial.println(rawPosition);
   int force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
   usbMIDI.sendControlChange(modCtrl, force, midiChan);
   Serial.print("Force = "); Serial.println(force);
   if (!isInitPressureRead) {
     isInitPressureRead = true;
-    float initialPressure = baro.getPressure();
+    float initialPressure = bmp.readPressure();//baro.getPressure();
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
   }
-  float rawPressure = baro.getPressure();
+//  float rawPressure = baro.getPressure();
+  float rawPressure = bmp.readPressure();
   int pressure = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
   Serial.print("Raw Pressure = "); Serial.println(rawPressure);
   Serial.print("Pressure = "); Serial.println(pressure);
@@ -94,7 +109,7 @@ void loop() {
   }
   Serial.println();
   prevNote = note;
-  //  delay(50);
+  delay(50);
 }
 
 
