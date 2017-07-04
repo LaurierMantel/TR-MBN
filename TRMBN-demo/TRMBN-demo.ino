@@ -1,10 +1,5 @@
-
-#include <Wire.h>
-//#include <SPI.h>
 #include <Adafruit_MPL3115A2.h>
 #include <Bounce.h>
-
-Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 
 // MIDI
 const int midiChan = 1;
@@ -26,12 +21,13 @@ const int fsrMax = 1000;
 const int forcePin = 14;
 
 // Pressure Sensor
+Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 const float minPressureDiff = 100;
 const float pressureRange = 5000;
 
 // Sustain Button
 const int buttonPin = 31;
-Bounce sustainButton = Bounce(buttonPin, 100);  // 10 ms debounce
+Bounce sustainButton = Bounce(buttonPin, 10);  // 10 ms debounce
 
 // State Variables
 bool isInitPressureRead = false;
@@ -51,26 +47,27 @@ void setup() {
 }
 
 void loop() {
-  int note = map(analogRead(positionPin), positionMin, positionMax, noteMin, noteMax);
+  int rawPosition = analogRead(positionPin);
+  int note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
   Serial.print("Note = "); Serial.println(note);
-  float force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
-  usbMIDI.sendControlChange(modCtrl,force,midiChan);
+  int force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
+  usbMIDI.sendControlChange(modCtrl, force, midiChan);
   Serial.print("Force = "); Serial.println(force);
   if (!isInitPressureRead) {
-    isInitPressureRead = true;  
+    isInitPressureRead = true;
     float initialPressure = baro.getPressure();
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
   }
   float rawPressure = baro.getPressure();
-  float pressure = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
+  int pressure = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
   Serial.print("Raw Pressure = "); Serial.println(rawPressure);
   Serial.print("Pressure = "); Serial.println(pressure);
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
     if (note != prevNote) {
-      usbMIDI.sendNoteOff(prevNote,0,midiChan);
+      usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
     }
     if (sustainButton.update()) {
@@ -83,7 +80,7 @@ void loop() {
     } else if (pressure > 0) {
       usbMIDI.sendControlChange(velCtrl, pressure, midiChan);
     } else if (pressure <= 0 && !isSustainOn) {
-      usbMIDI.sendNoteOff(note,0,midiChan);
+      usbMIDI.sendNoteOff(note, 0, midiChan);
       isNoteOn = false;
     }
   } else {
@@ -97,7 +94,7 @@ void loop() {
   }
   Serial.println();
   prevNote = note;
-//  delay(50);
+  //  delay(50);
 }
 
 
