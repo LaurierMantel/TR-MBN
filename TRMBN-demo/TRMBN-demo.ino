@@ -20,8 +20,8 @@ const int midiValMax = 127;
 const int positionPin = 33;
 const int positionMax = 1023;
 const int positionMin = 0;
-const int noteMin = 96;
-const int noteMax = 108;
+const int noteMin = 34;
+const int noteMax = 46;
 
 // Force Sensor
 const int fsrMin = 0;
@@ -32,7 +32,7 @@ const int forcePin = 14;
 Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
 //Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 const float minPressureDiff = 100;
-const float pressureRange = 1000;//2000;//5000;
+const float pressureRange = 200;//1000;//2000;//5000;
 
 // Sustain Button
 const int buttonPin = 31;
@@ -45,6 +45,14 @@ float maxPressure = 0;
 bool isNoteOn = false;
 bool isSustainOn = false;
 int prevNote = 0;
+int prevVel = 0;
+
+// Internal State Variables
+int velocity = 0;
+int rawPosition = 0;
+int note = 0;
+int force = 0;
+float rawPressure = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -60,11 +68,11 @@ void setup() {
 }
 
 void loop() {
-  int rawPosition = analogRead(positionPin);
-  int note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
+  rawPosition = analogRead(positionPin);
+  note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
   Serial.print("Note = "); Serial.println(note);
   Serial.print("RawPosition = "); Serial.println(rawPosition);
-  int force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
+  force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
   usbMIDI.sendControlChange(modCtrl, force, midiChan);
   Serial.print("Force = "); Serial.println(force);
   if (!isInitPressureRead) {
@@ -73,11 +81,18 @@ void loop() {
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
   }
-//  float rawPressure = baro.getPressure();
-  float rawPressure = bmp.readPressure();
-  int pressure = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
+  if (sustainButton.update()) {
+    if (sustainButton.fallingEdge()) {
+      isSustainOn = !isSustainOn;
+    }
+  }
+  if (!isSustainOn) {
+//    rawPressure = baro.getPressure();
+    rawPressure = bmp.readPressure();
+    velocity = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
+  }
   Serial.print("Raw Pressure = "); Serial.println(rawPressure);
-  Serial.print("Pressure = "); Serial.println(pressure);
+  Serial.print("Velocity = "); Serial.println(velocity);
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
@@ -85,30 +100,32 @@ void loop() {
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
     }
-    if (sustainButton.update()) {
-      if (sustainButton.fallingEdge()) {
-        isSustainOn = !isSustainOn;
-      }
-    }
-    if (pressure > midiValMax) {
+//    if (sustainButton.update()) {
+//      if (sustainButton.fallingEdge()) {
+//        isSustainOn = !isSustainOn;
+//      }
+//    }
+    if (velocity > midiValMax) {
+      Serial.println("test");
       usbMIDI.sendControlChange(velCtrl, midiValMax, midiChan);
-    } else if (pressure > 0) {
-      usbMIDI.sendControlChange(velCtrl, pressure, midiChan);
-    } else if (pressure <= 0 && !isSustainOn) {
+    } else if (velocity > 0) {
+      usbMIDI.sendControlChange(velCtrl, velocity, midiChan);
+    } else if (velocity <= 0 && !isSustainOn) {
       usbMIDI.sendNoteOff(note, 0, midiChan);
       isNoteOn = false;
     }
   } else {
-    if (pressure > midiValMax) {
+    if (velocity > midiValMax) {
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
       isNoteOn = true;
-    } else if (pressure > 0) {
-      usbMIDI.sendNoteOn(note, pressure, midiChan);
+    } else if (velocity > 0) {
+      usbMIDI.sendNoteOn(note, velocity, midiChan);
       isNoteOn = true;
     }
   }
   Serial.println();
   prevNote = note;
+  prevVel = velocity;
   delay(50);
 }
 
