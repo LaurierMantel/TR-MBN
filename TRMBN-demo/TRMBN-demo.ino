@@ -1,4 +1,4 @@
-#include <Adafruit_MPL3115A2.h>
+//#include <Adafruit_MPL3115A2.h>
 #include <Bounce.h>
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
@@ -21,7 +21,7 @@ const int positionPin = 33;
 const int positionMax = 1023;
 const int positionMin = 0;
 const int noteMin = 34;
-const int noteMax = 46;
+const int noteMax = 47;
 
 // Force Sensor
 const int fsrMin = 0;
@@ -73,7 +73,11 @@ void loop() {
   Serial.print("Note = "); Serial.println(note);
   Serial.print("RawPosition = "); Serial.println(rawPosition);
   force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
-  usbMIDI.sendControlChange(modCtrl, force, midiChan);
+  if (force > 0) { 
+    isSustainOn = true;
+  } else {
+    isSustainOn = false;
+  }
   Serial.print("Force = "); Serial.println(force);
   if (!isInitPressureRead) {
     isInitPressureRead = true;
@@ -100,11 +104,6 @@ void loop() {
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
     }
-//    if (sustainButton.update()) {
-//      if (sustainButton.fallingEdge()) {
-//        isSustainOn = !isSustainOn;
-//      }
-//    }
     if (velocity > midiValMax) {
       Serial.println("test");
       usbMIDI.sendControlChange(velCtrl, midiValMax, midiChan);
