@@ -1,4 +1,4 @@
-# TRMBN
+# TR-MBN
 Code for the trombone synthesizer project
 
 Force Sensing Resistor Docs
