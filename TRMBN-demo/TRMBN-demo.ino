@@ -146,7 +146,7 @@ void loop() {
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
-    if (note != prevNote) {
+    if (note != prevNote && rawPosition >= 73) {
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
     } else if (isOctaveOn) {
