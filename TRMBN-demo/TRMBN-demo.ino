@@ -62,7 +62,6 @@ float minPressure = 0;
 float maxPressure = 0;
 bool isNoteOn = false;
 bool isSustainOn = false;
-bool isOctaveOn = false;
 int prevNote = noteMin;
 int prevVel = 0;
 
@@ -76,24 +75,16 @@ float rawPressure = 0;
 int bend = pitchBendDefault;
 
 void setup() {
-  for(int i = 0; i < 200; i++){
-    usbMIDI.sendNoteOff(i, 0, midiChan);
-  }
   Serial.begin(9600);
   pinMode(glissandoButtonPin, INPUT_PULLUP);
   if (!bmp.begin()) {
     Serial.println("Couldnt find BMP280");
-    while(true){ delay(1000);};
+    while(1);
   }
-//  if (! baro.begin()) {
-//    Serial.println("Couldnt find MPL3115A2");
-//    return;
-//  }
 }
 
 void loop() {
   rawPosition = analogRead(positionPin);
-
   if (rawPosition < 73) {
     note = noteMin;
     bend = pitchBendDefault;
@@ -133,9 +124,6 @@ void loop() {
   octaveForce = map(analogRead(octaveForcePin), fsrMin, fsrMax, midiValMin, midiValMax);
   if (octaveForce > minForcePinReading) {
     note = note + 12; 
-    isOctaveOn = true;
-  } else {
-    isOctaveOn = false;
   }
   if (glissandoModeButton.update()) {
     if (glissandoModeButton.fallingEdge()) {
@@ -151,14 +139,10 @@ void loop() {
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
-    if (note != prevNote && note != noteMin) {
+    if (note != prevNote) {
       Serial.println("note != prevNote && rawPosition >= 73");
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
-    } else if (isOctaveOn) {
-      usbMIDI.sendNoteOff(prevNote, 0, midiChan);
-      usbMIDI.sendNoteOn(note + 12, midiValMax, midiChan);
-      Serial.println("isOctaveOn");
     }
     if (glissandoModeOn) {
       usbMIDI.sendPitchBend(bend, midiChan);
@@ -186,7 +170,7 @@ void loop() {
   Serial.println();
   prevNote = note;
   prevVel = velocity;
-  delay(200);
+  delay(50);
 }
 
 bool isBendDown(int pos) {
