@@ -38,7 +38,6 @@ const float pressureRange = 200;//1000;//2000;//5000;
 const int buttonPin = 31;
 Bounce sustainButton = Bounce(buttonPin, 10);  // 10 ms debounce
 
-
 // Pitch Bend
 const int pitchBendMin = 6144;
 const int pitchBendDefault = 8192;
@@ -80,11 +79,33 @@ void setup() {
 
 void loop() {
   rawPosition = analogRead(positionPin);
-  note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
+
+  if (rawPosition < 73) {
+    note = noteMin;
+    bend = pitchBendDefault;
+  } else if (rawPosition >= 73 && rawPosition <= 950) {
+    note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
+    int ceilThing = round(ceil(rawPosition/positionStep)*positionStep);
+    int floorThing = round(floor(rawPosition/positionStep)*positionStep);
+    int mid = 0;
+    if (isBendDown(ceilThing)) {
+      mid = ceilThing;
+    } else {
+      mid = floorThing;
+    }
+    bend = map(rawPosition, round(mid - positionStep), round(mid + positionStep), pitchBendMin, pitchBendMax);
+  } else if (rawPosition > 950) {
+    note = noteMax;
+    bend = pitchBendDefault;
+  }
+
+  
+  
   Serial.print("Note = "); Serial.println(note);
+  Serial.print("Bend = "); Serial.println(bend);
   Serial.print("RawPosition = "); Serial.println(rawPosition);
   force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
-  if (force > 0) { 
+  if (force > 10) { 
     isSustainOn = true;
   } else {
     isSustainOn = false;
@@ -114,17 +135,7 @@ void loop() {
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
     }
-    int ceilThing = round(ceil(rawPosition/positionStep)*positionStep);
-    int floorThing = round(floor(rawPosition/positionStep)*positionStep);
-    int mid = 0;
-    if (isBendDown(ceilThing)) {
-      mid = ceilThing;
-    } else {
-      mid = floorThing;
-    }
-    bend = map(rawPosition, round(mid - positionStep), round(mid + positionStep), pitchBendMin, pitchBendMax);
     usbMIDI.sendPitchBend(bend, midiChan);
-    Serial.print("bend = "); Serial.println(bend);
     if (velocity > midiValMax) {
       Serial.println("test");
       usbMIDI.sendControlChange(velCtrl, midiValMax, midiChan);
