@@ -38,14 +38,21 @@ const float pressureRange = 200;//1000;//2000;//5000;
 const int buttonPin = 31;
 Bounce sustainButton = Bounce(buttonPin, 10);  // 10 ms debounce
 
+
+// Octave Sensor
+//const int midiOctaveLength = 
+
+
 // Pitch Bend
 const int pitchBendMin = 6144;
 const int pitchBendDefault = 8192;
 const int pitchBendMax = 10240;
 const int notePositions[15] = {0, 73, 146, 219, 292, 365, 438, 512, 585, 658, 731, 804, 877, 950, 1023};
 const float positionStep = 1023/28.0;
-//[73, 146, 219, 292, 365, 438, 512, 585, 658, 731, 804, 877, 950, 1023]
-//[37, 110, 183, 256, 329, 402, 475, 548, 621, 694, 767, 840, 913, 986]
+/*
+73, 146, 219, 292, 365, 438, 512, 585, 658, 731, 804, 877, 950, 1023
+37, 110, 183, 256, 329, 402, 475, 548, 621, 694, 767, 840, 913, 986
+*/
 
 // State Variables
 bool isInitPressureRead = false;
@@ -53,7 +60,7 @@ float minPressure = 0;
 float maxPressure = 0;
 bool isNoteOn = false;
 bool isSustainOn = false;
-int prevNote = 0;
+int prevNote = noteMin;
 int prevVel = 0;
 
 // Internal State Variables
@@ -67,10 +74,10 @@ int bend = pitchBendDefault;
 void setup() {
   Serial.begin(9600);
   pinMode(buttonPin, INPUT_PULLUP);
-//  if (!bmp.begin()) {
-//    Serial.println("Couldnt find BMP280");
-//    return;
-//  }
+  if (!bmp.begin()) {
+    Serial.println("Couldnt find BMP280");
+    while(true){ delay(1000);};
+  }
 //  if (! baro.begin()) {
 //    Serial.println("Couldnt find MPL3115A2");
 //    return;
@@ -99,8 +106,6 @@ void loop() {
     bend = pitchBendDefault;
   }
 
-  
-  
   Serial.print("Note = "); Serial.println(note);
   Serial.print("Bend = "); Serial.println(bend);
   Serial.print("RawPosition = "); Serial.println(rawPosition);
@@ -123,8 +128,8 @@ void loop() {
     }
   }
   if (!isSustainOn) {
-//    rawPressure = bmp.readPressure();//baro.getPressure();
-    velocity = 127;//map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
+    rawPressure = bmp.readPressure();//baro.getPressure();
+    velocity = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
   }
   Serial.print("Raw Pressure = "); Serial.println(rawPressure);
   Serial.print("Velocity = "); Serial.println(velocity);
