@@ -26,7 +26,8 @@ const int noteMax = 48;
 // Force Sensor
 const int fsrMin = 0;
 const int fsrMax = 1000;
-const int forcePin = 14;
+const int sustainForcePin = 14;
+const int octaveForcePin = 15;
 const int minForcePinReading = 10;
 
 // Pressure Sensor
@@ -61,6 +62,7 @@ float minPressure = 0;
 float maxPressure = 0;
 bool isNoteOn = false;
 bool isSustainOn = false;
+bool isOctaveOn = false;
 int prevNote = noteMin;
 int prevVel = 0;
 
@@ -110,7 +112,7 @@ void loop() {
   Serial.print("Note = "); Serial.println(note);
   Serial.print("Bend = "); Serial.println(bend);
   Serial.print("RawPosition = "); Serial.println(rawPosition);
-  sustainForce = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
+  sustainForce = map(analogRead(sustainForcePin), fsrMin, fsrMax, midiValMin, midiValMax);
   if (sustainForce > minForcePinReading) { 
     isSustainOn = true;
   } else {
@@ -122,6 +124,13 @@ void loop() {
     float initialPressure = bmp.readPressure();//baro.getPressure();
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
+  }
+  octaveForce = map(analogRead(octaveForce), fsrMin, fsrMax, midiValMin, midiValMax);
+  if (octaveForce > minForcePinReading) {
+    note = note + 12; 
+    isOctaveOn = true;
+  } else {
+    isOctaveOn = false;
   }
   if (sustainButton.update()) {
     if (sustainButton.fallingEdge()) {
@@ -140,6 +149,9 @@ void loop() {
     if (note != prevNote) {
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
+    } else if (isOctaveOn) {
+      usbMIDI.sendNoteOff(prevNote, 0, midiChan);
+      usbMIDI.sendNoteOn(note + 12, midiValMax, midiChan);
     }
     usbMIDI.sendPitchBend(bend, midiChan);
     if (velocity > midiValMax) {
