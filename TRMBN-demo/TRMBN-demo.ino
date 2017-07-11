@@ -27,6 +27,7 @@ const int noteMax = 48;
 const int fsrMin = 0;
 const int fsrMax = 1000;
 const int forcePin = 14;
+const int minForcePinReading = 10;
 
 // Pressure Sensor
 Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
@@ -67,7 +68,7 @@ int prevVel = 0;
 int velocity = 0;
 int rawPosition = 0;
 int note = 0;
-int force = 0;
+int sustainForce = 0;
 float rawPressure = 0;
 int bend = pitchBendDefault;
 
@@ -109,13 +110,13 @@ void loop() {
   Serial.print("Note = "); Serial.println(note);
   Serial.print("Bend = "); Serial.println(bend);
   Serial.print("RawPosition = "); Serial.println(rawPosition);
-  force = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
-  if (force > 10) { 
+  sustainForce = map(analogRead(forcePin), fsrMin, fsrMax, midiValMin, midiValMax);
+  if (sustainForce > minForcePinReading) { 
     isSustainOn = true;
   } else {
     isSustainOn = false;
   }
-  Serial.print("Force = "); Serial.println(force);
+  Serial.print("Force = "); Serial.println(sustainForce);
   if (!isInitPressureRead) {
     isInitPressureRead = true;
     float initialPressure = bmp.readPressure();//baro.getPressure();
