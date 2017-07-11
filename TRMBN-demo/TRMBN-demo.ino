@@ -36,10 +36,10 @@ Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
 const float minPressureDiff = 100;
 const float pressureRange = 200;//1000;//2000;//5000;
 
-// Sustain Button
-const int buttonPin = 31;
-Bounce sustainButton = Bounce(buttonPin, 10);  // 10 ms debounce
-
+// Glissando Mode
+const int glissandoButtonPin = 31;
+Bounce glissandoModeButton = Bounce(glissandoButtonPin, 10);  // 10 ms debounce
+bool glissandoModeOn = true;
 
 // Octave Sensor
 //const int midiOctaveLength = 
@@ -71,12 +71,16 @@ int velocity = 0;
 int rawPosition = 0;
 int note = 0;
 int sustainForce = 0;
+int octaveForce = 0;
 float rawPressure = 0;
 int bend = pitchBendDefault;
 
 void setup() {
+  for(int i = 0; i < 200; i++){
+    usbMIDI.sendNoteOff(i, 0, midiChan);
+  }
   Serial.begin(9600);
-  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(glissandoButtonPin, INPUT_PULLUP);
   if (!bmp.begin()) {
     Serial.println("Couldnt find BMP280");
     while(true){ delay(1000);};
@@ -118,23 +122,24 @@ void loop() {
   } else {
     isSustainOn = false;
   }
-  Serial.print("Force = "); Serial.println(sustainForce);
+  Serial.print("sustainForce = "); Serial.println(sustainForce);
+  Serial.print("octaveForce = "); Serial.println(octaveForce);
   if (!isInitPressureRead) {
     isInitPressureRead = true;
     float initialPressure = bmp.readPressure();//baro.getPressure();
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
   }
-  octaveForce = map(analogRead(octaveForce), fsrMin, fsrMax, midiValMin, midiValMax);
+  octaveForce = map(analogRead(octaveForcePin), fsrMin, fsrMax, midiValMin, midiValMax);
   if (octaveForce > minForcePinReading) {
     note = note + 12; 
     isOctaveOn = true;
   } else {
     isOctaveOn = false;
   }
-  if (sustainButton.update()) {
-    if (sustainButton.fallingEdge()) {
-      isSustainOn = !isSustainOn;
+  if (glissandoModeButton.update()) {
+    if (glissandoModeButton.fallingEdge()) {
+      glissandoModeOn = !glissandoModeOn;
     }
   }
   if (!isSustainOn) {
@@ -146,14 +151,18 @@ void loop() {
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
-    if (note != prevNote && rawPosition >= 73) {
+    if (note != prevNote && note != noteMin) {
+      Serial.println("note != prevNote && rawPosition >= 73");
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
     } else if (isOctaveOn) {
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note + 12, midiValMax, midiChan);
+      Serial.println("isOctaveOn");
     }
-    usbMIDI.sendPitchBend(bend, midiChan);
+    if (glissandoModeOn) {
+      usbMIDI.sendPitchBend(bend, midiChan);
+    }
     if (velocity > midiValMax) {
       Serial.println("test");
       usbMIDI.sendControlChange(velCtrl, midiValMax, midiChan);
@@ -165,17 +174,19 @@ void loop() {
     }
   } else {
     if (velocity > midiValMax) {
+      Serial.println("velocity > midiValMax");
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
       isNoteOn = true;
     } else if (velocity > 0) {
       usbMIDI.sendNoteOn(note, velocity, midiChan);
       isNoteOn = true;
+      Serial.println("velocity > 0");
     }
   }
   Serial.println();
   prevNote = note;
   prevVel = velocity;
-  delay(50);
+  delay(200);
 }
 
 bool isBendDown(int pos) {
