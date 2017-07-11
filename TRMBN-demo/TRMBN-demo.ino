@@ -56,6 +56,9 @@ const float positionStep = 1023/28.0;
 37, 110, 183, 256, 329, 402, 475, 548, 621, 694, 767, 840, 913, 986
 */
 
+//LED
+const int ledPin = 16;
+
 // State Variables
 bool isInitPressureRead = false;
 float minPressure = 0;
@@ -77,6 +80,7 @@ int bend = pitchBendDefault;
 void setup() {
   Serial.begin(9600);
   pinMode(glissandoButtonPin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
   if (!bmp.begin()) {
     Serial.println("Couldnt find BMP280");
     while(1);
@@ -125,11 +129,16 @@ void loop() {
   if (octaveForce > minForcePinReading) {
     note = note + 12; 
   }
-  if (glissandoModeButton.update()) {
-    if (glissandoModeButton.fallingEdge()) {
-      glissandoModeOn = !glissandoModeOn;
+  if (glissandoModeButton.update() && glissandoModeButton.fallingEdge()) {
+    glissandoModeOn = !glissandoModeOn;
+    if (glissandoModeOn) {
+      digitalWrite(ledPin, LOW);
+    } else {
+      digitalWrite(ledPin, HIGH);
     }
+
   }
+  Serial.print("gliss = "); Serial.println(glissandoModeOn);
   if (!isSustainOn) {
     rawPressure = bmp.readPressure();//baro.getPressure();
     velocity = map(rawPressure, minPressure, maxPressure, midiValMin, midiValMax);
