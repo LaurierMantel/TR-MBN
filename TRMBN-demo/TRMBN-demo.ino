@@ -148,7 +148,7 @@ void loop() {
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
-    if (note != prevNote) {
+    if (note != prevNote && rawPosition > 10) {
       Serial.println("note != prevNote && rawPosition >= 73");
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
@@ -177,8 +177,16 @@ void loop() {
     }
   }
   Serial.println();
-  prevNote = note;
-  prevVel = velocity;
+  if (isNoteOn) {
+    if (rawPosition > 10) {
+      prevNote = note;
+      prevVel = velocity;
+    }
+  } else {
+    prevNote = note;
+    prevVel = velocity;
+  }
+  
   delay(50);
 }
 
