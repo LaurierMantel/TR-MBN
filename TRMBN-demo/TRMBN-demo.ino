@@ -90,7 +90,7 @@ void setup() {
 void loop() {
   rawPosition = analogRead(positionPin);
   if (rawPosition < 73) {
-    note = noteMin;
+    note = prevNote;
     bend = pitchBendDefault;
   } else if (rawPosition >= 73 && rawPosition <= 950) {
     note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
@@ -148,7 +148,7 @@ void loop() {
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
-    if (note != prevNote && rawPosition > 10) {
+    if (note != prevNote) {
       Serial.println("note != prevNote && rawPosition >= 73");
       usbMIDI.sendNoteOff(prevNote, 0, midiChan);
       usbMIDI.sendNoteOn(note, midiValMax, midiChan);
@@ -177,15 +177,8 @@ void loop() {
     }
   }
   Serial.println();
-  if (isNoteOn) {
-    if (rawPosition > 10) {
-      prevNote = note;
-      prevVel = velocity;
-    }
-  } else {
-    prevNote = note;
-    prevVel = velocity;
-  }
+  prevNote = note;
+  prevVel = velocity;
   
   delay(50);
 }
