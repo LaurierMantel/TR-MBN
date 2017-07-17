@@ -34,7 +34,7 @@ const int minForcePinReading = 10;
 Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
 //Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 const float minPressureDiff = 100;
-const float pressureRange = 200;//1000;//2000;//5000;
+const float pressureRange = 400;//2000;//5000;
 
 // Glissando Mode
 const int glissandoButtonPin = 31;
@@ -65,6 +65,7 @@ float minPressure = 0;
 float maxPressure = 0;
 bool isNoteOn = false;
 bool isSustainOn = false;
+bool isOctaveOn = false;
 int prevNote = noteMin;
 int prevVel = 0;
 
@@ -89,11 +90,20 @@ void setup() {
 
 void loop() {
   rawPosition = analogRead(positionPin);
-  if (rawPosition < 73) {
+  if (rawPosition < 30) {
     note = prevNote;
+    bend = pitchBendDefault;
+  } else if (rawPosition >= 30 && rawPosition < 73) {
+    note = noteMin;
+    if (isOctaveOn) {
+      note = note + 12;
+    }
     bend = pitchBendDefault;
   } else if (rawPosition >= 73 && rawPosition <= 950) {
     note = map(rawPosition, positionMin, positionMax, noteMin, noteMax);
+    if (isOctaveOn) {
+      note = note + 12;
+    }
     int ceilThing = round(ceil(rawPosition/positionStep)*positionStep);
     int floorThing = round(floor(rawPosition/positionStep)*positionStep);
     int mid = 0;
@@ -105,9 +115,11 @@ void loop() {
     bend = map(rawPosition, round(mid - positionStep), round(mid + positionStep), pitchBendMin, pitchBendMax);
   } else if (rawPosition > 950) {
     note = noteMax;
+    if (isOctaveOn) {
+      note = note + 12;
+    }
     bend = pitchBendDefault;
   }
-
   Serial.print("Note = "); Serial.println(note);
   Serial.print("Bend = "); Serial.println(bend);
   Serial.print("RawPosition = "); Serial.println(rawPosition);
@@ -119,15 +131,19 @@ void loop() {
   }
   Serial.print("sustainForce = "); Serial.println(sustainForce);
   Serial.print("octaveForce = "); Serial.println(octaveForce);
+  octaveForce = map(analogRead(octaveForcePin), fsrMin, fsrMax, midiValMin, midiValMax);
+  if (octaveForce >= minForcePinReading && !isOctaveOn) {
+    isOctaveOn = true;
+    note = note + 12; 
+  } else if (octaveForce < minForcePinReading && isOctaveOn) {
+    isOctaveOn = false;
+    note = note - 12; 
+  }
   if (!isInitPressureRead) {
     isInitPressureRead = true;
     float initialPressure = bmp.readPressure();//baro.getPressure();
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
-  }
-  octaveForce = map(analogRead(octaveForcePin), fsrMin, fsrMax, midiValMin, midiValMax);
-  if (octaveForce > minForcePinReading) {
-    note = note + 12; 
   }
   if (glissandoModeButton.update() && glissandoModeButton.fallingEdge()) {
     glissandoModeOn = !glissandoModeOn;
@@ -146,6 +162,7 @@ void loop() {
   Serial.print("Raw Pressure = "); Serial.println(rawPressure);
   Serial.print("Velocity = "); Serial.println(velocity);
   Serial.print("isSustainOn = "); Serial.println(isSustainOn);
+  Serial.print("isOctaveOn = "); Serial.println(isOctaveOn);
   Serial.print("isNoteOn = "); Serial.println(isNoteOn);
   if (isNoteOn) {
     if (note != prevNote) {
@@ -191,4 +208,5 @@ bool isBendDown(int pos) {
   }
   return false;
 }
+
 
