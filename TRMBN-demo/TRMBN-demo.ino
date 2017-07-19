@@ -34,7 +34,7 @@ const int minForcePinReading = 10;
 Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
 //Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 const float minPressureDiff = 100;
-const float pressureRange = 400;//2000;//5000;
+const float pressureRange = 200 ;//2000;//5000;
 
 // Glissando Mode
 const int glissandoButtonPin = 31;
