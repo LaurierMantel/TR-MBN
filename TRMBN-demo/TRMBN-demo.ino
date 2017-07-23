@@ -1,4 +1,3 @@
-//#include <Adafruit_MPL3115A2.h>
 #include <Bounce.h>
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
@@ -20,8 +19,8 @@ const int midiValMax = 127;
 const int positionPin = 33;
 const int positionMax = 1023;
 const int positionMin = 0;
-const int noteMin = 36;
-const int noteMax = 48;
+const int noteMin = 35;
+const int noteMax = 47;
 
 // Force Sensor
 const int fsrMin = 0;
@@ -32,18 +31,13 @@ const int minForcePinReading = 10;
 
 // Pressure Sensor
 Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
-//Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 const float minPressureDiff = 100;
-const float pressureRange = 200 ;//2000;//5000;
+const float pressureRange = 200;
 
 // Glissando Mode
 const int glissandoButtonPin = 31;
 Bounce glissandoModeButton = Bounce(glissandoButtonPin, 10);  // 10 ms debounce
 bool glissandoModeOn = true;
-
-// Octave Sensor
-//const int midiOctaveLength = 
-
 
 // Pitch Bend
 const int pitchBendMin = 6144;
@@ -68,8 +62,6 @@ bool isSustainOn = false;
 bool isOctaveOn = false;
 int prevNote = noteMin;
 int prevVel = 0;
-
-// Internal State Variables
 int velocity = 0;
 int rawPosition = 0;
 int note = 0;
@@ -141,7 +133,7 @@ void loop() {
   }
   if (!isInitPressureRead) {
     isInitPressureRead = true;
-    float initialPressure = bmp.readPressure();//baro.getPressure();
+    float initialPressure = bmp.readPressure();
     minPressure = initialPressure + minPressureDiff;
     maxPressure = minPressure + pressureRange;
   }
@@ -196,7 +188,6 @@ void loop() {
   Serial.println();
   prevNote = note;
   prevVel = velocity;
-  
   delay(50);
 }
 
